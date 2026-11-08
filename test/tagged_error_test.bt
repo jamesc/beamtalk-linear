@@ -1,0 +1,22 @@
+// Copyright 2026 James Casey
+// SPDX-License-Identifier: Apache-2.0
+
+// Tests for TaggedError and the shared displayString it gives LinearError.
+
+TestCase subclass: TaggedErrorTest
+
+  testBaseDisplayStringWithNoDetail =>
+    err := TaggedError new: #{#kind => "some_kind"}
+    self assert: err displayString equals: "TaggedError(some_kind)"
+
+  testBaseDisplayStringWithDetail =>
+    err := TaggedError new: #{#kind => "some_kind", #detail => "extra info"}
+    self assert: err displayString equals: "TaggedError(some_kind): extra info"
+
+  testLinearErrorDisplayString =>
+    err := LinearError apiRequest: "boom"
+    self assert: err displayString equals: "LinearError(api_request): boom"
+
+  testLinearErrorWithoutDetail =>
+    err := LinearError missingEndCursor
+    self assert: err displayString equals: "LinearError(missing_end_cursor)"
