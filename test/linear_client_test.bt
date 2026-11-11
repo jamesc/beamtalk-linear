@@ -64,6 +64,18 @@ TestCase subclass: LinearClientTest
     self assert: err body equals: "Error"
     self assert: (err body isKindOf: String)
 
+  // Valid JSON that is not an object (here an array) is an error result,
+  // not a doesNotUnderstand: on `at:ifAbsent:`.
+  testParseResponseRejectsNonObjectJsonBody =>
+    client := LinearClient new
+    resp := HTTPResponse new: #{
+      #status => 200,
+      #body => Binary fromBytes: "[1,2,3]" toBytes
+    }
+    result := client parseResponse: resp
+    self assert: result isError
+    self assert: (LinearClient errorKind: result) equals: "unknown_payload"
+
   // --- Normalization ---
   testNormalizeIssue =>
     node := #{
