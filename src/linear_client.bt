@@ -71,6 +71,9 @@ typed Value subclass: LinearClient
       LinearError unknownPayload: e displayString
     ])
       andThen: [:jsonBody |
+        (jsonBody isKindOf: Dictionary) ifFalse: [
+          ^Result error: (LinearError unknownPayload: "response is not a JSON object")
+        ]
         errors := jsonBody at: "errors" ifAbsent: [nil]
         errors isNil
           ifFalse: [
