@@ -3,9 +3,9 @@
 
 [package]
 name = "linear"
-version = "0.1.1"
+version = "0.1.2"
 description = "Linear GraphQL issue tracker client for Beamtalk"
 licenses = ["Apache-2.0"]
 
 [dependencies]
-http = "0.3.3"
+http = "0.3.4"
