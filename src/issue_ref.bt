@@ -6,6 +6,7 @@
 /// (LinearClient>>fetchIssueStatesByIds:), which share the same GraphQL
 /// node shape: id, identifier, state { name }.
 typed Value subclass: IssueRef
+  uses: JsonMappable
   field: id :: String | Nil = nil
   field: identifier :: String | Nil = nil
   field: state :: String | Nil = nil
@@ -20,5 +21,9 @@ typed Value subclass: IssueRef
         ]) at: "name" ifAbsent: [nil])
       }
 
-  asJson -> Dictionary =>
-    #{"id" => self.id, "identifier" => self.identifier, "state" => self.state}
+  /// Wire-format schema (JsonMappable, BT-2819): keys match field names.
+  class jsonMapping -> JsonMapping =>
+    JsonMapping new
+      |> mapField: #id
+      |> mapField: #identifier
+      |> mapField: #state
