@@ -3,6 +3,7 @@
 
 /// Issue — a normalized Linear issue, built from a GraphQL issue node.
 typed Value subclass: Issue
+  uses: JsonMappable
   field: id :: String | Nil = nil
   field: identifier :: String | Nil = nil
   field: title :: String | Nil = nil
@@ -58,21 +59,21 @@ typed Value subclass: Issue
       IssueRef fromNode: (r at: "relatedIssue" ifAbsent: [#{}])
     ]
 
-  /// Wire-format JSON representation (JsonRepresentable, ADR 0068). Also
-  /// used by boundaries that expect dict-like data, e.g. template variable
-  /// lookup in downstream prompt renderers.
-  asJson -> Dictionary =>
-    #{
-      "id" => self.id,
-      "identifier" => self.identifier,
-      "title" => self.title,
-      "description" => self.description,
-      "priority" => self.priority,
-      "state" => self.state,
-      "branch_name" => self.branchName,
-      "url" => self.url,
-      "labels" => self.labels,
-      "blocked_by" => self.blockedBy,
-      "created_at" => self.createdAt,
-      "updated_at" => self.updatedAt
-    }
+  /// Wire-format schema (JsonMappable, BT-2819): camelCase fields map to
+  /// snake_case keys. `asJson` is derived and still answers a Dictionary, so
+  /// downstream template lookup keeps working. `blockedBy` holds IssueRefs,
+  /// which are mapped objects and convert recursively.
+  class jsonMapping -> JsonMapping =>
+    JsonMapping new
+      |> mapField: #id
+      |> mapField: #identifier
+      |> mapField: #title
+      |> mapField: #description
+      |> mapField: #priority
+      |> mapField: #state
+      |> mapField: #branchName to: "branch_name"
+      |> mapField: #url
+      |> mapField: #labels
+      |> mapField: #blockedBy to: "blocked_by"
+      |> mapField: #createdAt to: "created_at"
+      |> mapField: #updatedAt to: "updated_at"

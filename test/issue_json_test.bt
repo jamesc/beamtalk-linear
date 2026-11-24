@@ -1,0 +1,103 @@
+// Copyright 2026 James Casey
+// SPDX-License-Identifier: Apache-2.0
+
+/// Pins the wire format of Issue / IssueRef asJson (consumed by symphony).
+TestCase subclass: IssueJsonTest
+
+  testIssueRefAsJson =>
+    ref := IssueRef
+      id: "r1"
+      identifier: "BT-1"
+      state: "Done"
+    self assert: ref asJson equals: #{
+      "id" => "r1",
+      "identifier" => "BT-1",
+      "state" => "Done"
+    }
+
+  testIssueRefGenerate =>
+    ref := IssueRef
+      id: "r1"
+      identifier: "BT-1"
+      state: nil
+    self assert: (Json generate: ref) equals: "\{""id"":""r1"",""identifier"":""BT-1"",""state"":null}"
+
+  testIssueAsJsonKeysAndValues =>
+    blocker := IssueRef
+      id: "r1"
+      identifier: "BT-1"
+      state: "Todo"
+    issue := Issue
+      new: #{
+        #id => "i1",
+        #identifier => "BT-2",
+        #title => "T",
+        #description => "D",
+        #priority => 2,
+        #state => "In Progress",
+        #branchName => "b/x",
+        #url => "http://u",
+        #labels => #("a", "b"),
+        #blockedBy => #(blocker),
+        #createdAt => "c",
+        #updatedAt => "u"
+      }
+    json := issue asJson
+    self assert: json size equals: 12
+    self assert: (json at: "id") equals: "i1"
+    self assert: (json at: "identifier") equals: "BT-2"
+    self assert: (json at: "title") equals: "T"
+    self assert: (json at: "description") equals: "D"
+    self assert: (json at: "priority") equals: 2
+    self assert: (json at: "state") equals: "In Progress"
+    self assert: (json at: "branch_name") equals: "b/x"
+    self assert: (json at: "url") equals: "http://u"
+    self assert: (json at: "labels") equals: #("a", "b")
+    self assert: (json at: "created_at") equals: "c"
+    self assert: (json at: "updated_at") equals: "u"
+    self assert: ((json at: "blocked_by") collect: [:b |
+      b asJson
+    ]) equals: #(#{"id" => "r1", "identifier" => "BT-1", "state" => "Todo"})
+
+  testIssueDefaultsAsJson =>
+    json := Issue new asJson
+    self assert: json size equals: 12
+    self assert: (json at: "id") equals: nil
+    self assert: (json at: "labels") equals: #()
+    self assert: (json at: "blocked_by") equals: #()
+    self assert: (json includesKey: "branchName") equals: false
+
+  testIssueGenerateIsByteIdentical =>
+    issue := Issue
+      new: #{
+        #id => "i1",
+        #identifier => "BT-2",
+        #priority => 1,
+        #labels => #("a"),
+        #blockedBy => #(IssueRef
+          id: "r"
+          identifier: "BT-1"
+          state: "Done")
+      }
+    self assert: (Json generate: issue asJson) equals: (Json generate: issue)
+
+  testIssueGenerateGolden =>
+    issue := Issue
+      new: #{
+        #id => "i1",
+        #identifier => "BT-2",
+        #title => "T",
+        #description => "D",
+        #priority => 2,
+        #state => "S",
+        #branchName => "b",
+        #url => "u",
+        #labels => #("a", "b"),
+        #blockedBy => #(IssueRef
+          id: "r1"
+          identifier: "BT-1"
+          state: "Todo"),
+        #createdAt => "c",
+        #updatedAt => "d"
+      }
+    self assert: (Json generate: issue) equals: "\{""blocked_by"":[\{""id"":""r1"",""identifier"":""BT-1"",""state"":""Todo""}],""branch_name"":""b"",""created_at"":""c"",""description"":""D"",""id"":""i1"",""identifier"":""BT-2"",""labels"":[""a"",""b""],""priority"":2,""state"":""S"",""title"":""T"",""updated_at"":""d"",""url"":""u""}"
