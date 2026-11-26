@@ -34,13 +34,23 @@ typed Value subclass: LinearClient
       }
 
   // --- Error helpers ---
-  class errorKind: result :: Result -> String =>
+
+  /// Returns the error kind of a failed Result, or nil when the Result is ok.
+  class errorKind: result :: Result -> String | Nil =>
     result isError ifFalse: [^nil]
     result error match: [
       e :: LinearError -> e kind;
       d :: Dictionary -> (d at: "kind" ifAbsent: ["unknown"]);
       _ -> "unknown"
     ]
+
+  /// Maps the `data` of a terminal-issues response to Issues; a missing
+  /// `issues` key yields an empty list.
+  class issuesFromTerminalData: data :: Dictionary -> List(Issue) =>
+    issues := data at: "issues" ifAbsent: [nil]
+    issues isNil ifTrue: [^#()]
+    nodes := issues at: "nodes" ifAbsent: [#()]
+    nodes collect: [:node | Issue fromNode: node]
 
   // --- Core GraphQL transport ---
 
@@ -166,13 +176,7 @@ typed Value subclass: LinearClient
     (self query: self terminalQuery variables: #{
       "projectSlug" => self.projectSlug,
       "states" => stateNames
-    })
-      map: [:data |
-        issues := data at: "issues" ifAbsent: [nil]
-        issues isNil ifTrue: [^#()]
-        nodes := issues at: "nodes" ifAbsent: [#()]
-        nodes collect: [:node | Issue fromNode: node]
-      ]
+    }) map: [:data | LinearClient issuesFromTerminalData: data]
 
   terminalQuery -> String =>
     "query($projectSlug: String!, $states: [String!]!) \{\n      issues(\n        filter: \{\n          project: \{ slugId: \{ eq: $projectSlug } },\n          state: \{ name: \{ in: $states } }\n        },\n        first: 250\n      ) \{\n        nodes \{\n          id identifier title\n          state \{ name }\n        }\n      }\n    }"
