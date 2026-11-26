@@ -45,8 +45,7 @@ typed Value subclass: LinearClient
     ]
 
   /// Maps the `data` of a terminal-issues response to Issues; a missing
-  /// `issues` key yields an empty list (BT-5330: this used to `^#()` out of
-  /// the method with a bare List instead of a Result).
+  /// `issues` key yields an empty list.
   class issuesFromTerminalData: data :: Dictionary -> List(Issue) =>
     issues := data at: "issues" ifAbsent: [nil]
     issues isNil ifTrue: [^#()]

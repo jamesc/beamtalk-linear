@@ -71,8 +71,8 @@ TestCase subclass: LinearClientTest
     ok := Result ok: "data"
     self assert: (LinearClient errorKind: ok) equals: nil
 
-  // BT-5330: a missing `issues` key must map to an empty list, which
-  // fetchIssuesByStates: then wraps in Result ok: (it used to escape with a bare List).
+  // A missing `issues` key maps to an empty list, which fetchIssuesByStates:
+  // wraps in Result ok:.
   testIssuesFromTerminalDataMissingIssues =>
     self assert: (LinearClient issuesFromTerminalData: #{}) equals: #()
 
@@ -80,6 +80,21 @@ TestCase subclass: LinearClientTest
     self assert: (LinearClient issuesFromTerminalData: #{
       "issues" => #{"nodes" => #()}
     }) equals: #()
+
+  testIssuesFromTerminalDataMapsNodes =>
+    issues := LinearClient
+      issuesFromTerminalData: #{
+        "issues" => #{
+          "nodes" => #(#{
+            "id" => "i1",
+            "identifier" => "BT-1",
+            "title" => "T",
+            "state" => #{"name" => "Done"}
+          })
+        }
+      }
+    self assert: issues size equals: 1
+    self assert: issues first identifier equals: "BT-1"
 
   testErrorKindForNonDictError =>
     err := Result error: "simple string"
