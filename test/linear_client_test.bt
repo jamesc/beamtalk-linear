@@ -33,6 +33,32 @@ TestCase subclass: LinearClientTest
     self assert: client projectSlug equals: "my-proj"
     self assert: client timeout equals: 30000
 
+  testGraphqlResultErrors =>
+    client := LinearClient new
+    result := client graphqlResult: #{"errors" => #(#{"message" => "boom"})}
+    self assert: (LinearClient errorKind: result) equals: "graphql_errors"
+
+  testGraphqlResultNullErrorsIsAbsent =>
+    client := LinearClient new
+    result := client graphqlResult: #{
+      "errors" => nil,
+      "data" => #{"ok" => true}
+    }
+    self assert: result isOk
+    self assert: (result unwrap at: "ok") equals: true
+
+  testGraphqlResultData =>
+    client := LinearClient new
+    result := client graphqlResult: #{"data" => #{"ok" => true}}
+    self assert: result isOk
+
+  testGraphqlResultMissingData =>
+    client := LinearClient new
+    self assert: (LinearClient errorKind: (client graphqlResult: #{})) equals: "unknown_payload"
+    self assert: (LinearClient errorKind: (client graphqlResult: #{
+      "data" => nil
+    })) equals: "unknown_payload"
+
   testErrorKindForLinearError =>
     err := Result error: (LinearError apiRequest: "timeout")
     self assert: (LinearClient errorKind: err) equals: "api_request"
