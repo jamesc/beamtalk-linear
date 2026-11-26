@@ -71,22 +71,26 @@ typed Value subclass: LinearClient
       LinearError unknownPayload: e displayString
     ])
       andThen: [:jsonBody |
-        (jsonBody isKindOf: Dictionary) ifFalse: [
-          ^Result error: (LinearError unknownPayload: "response is not a JSON object")
+        jsonBody match: [
+          body :: Dictionary -> self graphqlResult: body;
+          _ -> Result error: (LinearError unknownPayload: "response is not a JSON object")
         ]
-        errors := jsonBody at: "errors" ifAbsent: [nil]
-        errors isNil
-          ifFalse: [
-            ^Result error: (LinearError graphqlErrors: errors data: (jsonBody at: "data" ifAbsent: [
-              nil
-            ]))
-          ]
-
-        data := jsonBody at: "data" ifAbsent: [nil]
-        data isNil ifTrue: [
-          Result error: (LinearError unknownPayload: "missing data field")
-        ] ifFalse: [Result ok: data]
       ]
+
+  /// Maps a decoded GraphQL response object to its `data`, or to a
+  /// `graphql_errors` / `unknown_payload` error. A null `errors` counts as absent.
+  graphqlResult: body :: Dictionary -> Result(Dictionary, LinearError) =>
+    errors := body at: "errors" ifAbsent: [nil]
+    errors isNil
+      ifFalse: [
+        ^Result error: (LinearError graphqlErrors: errors data: (body at: "data" ifAbsent: [
+          nil
+        ]))
+      ]
+    (body at: "data" ifAbsent: [nil]) match: [
+      nil -> Result error: (LinearError unknownPayload: "missing data field");
+      data -> Result ok: data
+    ]
 
   // --- Candidate issue fetch (BT-1376) ---
 
