@@ -25,7 +25,7 @@ typed Value subclass: Issue
       ?"title" => title,
       ?"description" => description,
       ?"priority" => rawPriority,
-      ?"state" => stateNode = #{},
+      ?"state" => stateNode,
       ?"branchName" => branchName,
       ?"url" => url,
       ?"labels" => labelsObj,
@@ -33,7 +33,11 @@ typed Value subclass: Issue
       ?"createdAt" => createdAt,
       ?"updatedAt" => updatedAt
     } := node
-    #{?"name" => state} := stateNode
+    // `state` may be absent, null, or a node without `name`.
+    state := stateNode match: [
+      #{?"name" => name} -> name;
+      _ -> nil
+    ]
     priority := rawPriority match: [
       n :: Integer -> n;
       _ -> nil
@@ -54,12 +58,12 @@ typed Value subclass: Issue
         #updatedAt => updatedAt
       }
 
-  class labelsFromNode: labelsObj :: Dictionary -> List(String) =>
+  class labelsFromNode: labelsObj :: Dictionary | Nil -> List(String) =>
     labelsObj isNil ifTrue: [^#()]
     nodes := labelsObj at: "nodes" ifAbsent: [#()]
     nodes collect: [:l | (l at: "name" ifAbsent: [""]) lowercase]
 
-  class blockersFromNode: relationsObj :: Dictionary -> List(IssueRef) =>
+  class blockersFromNode: relationsObj :: Dictionary | Nil -> List(IssueRef) =>
     relationsObj isNil ifTrue: [^#()]
     nodes := relationsObj at: "nodes" ifAbsent: [#()]
     // Only include inverse relations of type "blocks"

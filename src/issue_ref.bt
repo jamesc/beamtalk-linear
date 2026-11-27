@@ -12,12 +12,12 @@ typed Value subclass: IssueRef
   field: state :: String | Nil = nil
 
   class fromNode: node :: Dictionary -> IssueRef =>
-    #{
-      ?"id" => id,
-      ?"identifier" => identifier,
-      ?"state" => stateNode = #{}
-    } := node
-    #{?"name" => state} := stateNode
+    #{?"id" => id, ?"identifier" => identifier, ?"state" => stateNode} := node
+    // `state` may be absent, null, or a node without `name`.
+    state := stateNode match: [
+      #{?"name" => name} -> name;
+      _ -> nil
+    ]
     self new: #{#id => id, #identifier => identifier, #state => state}
 
   /// Wire-format schema (JsonMappable, BT-2819): keys match field names.

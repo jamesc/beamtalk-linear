@@ -221,6 +221,31 @@ TestCase subclass: LinearClientTest
     self assert: ref identifier equals: "Y-1"
     self assert: ref state equals: nil
 
+  testNormalizeNullFieldsLikeAbsentOnes =>
+    // GraphQL sends `null` for an unset field: a present nil binds nil (an
+    // optional key's default only replaces a missing key), and a null
+    // `state`, `labels` or `inverseRelations` reads like an absent one.
+    issue := Issue
+      fromNode: #{
+        "id" => "x",
+        "description" => nil,
+        "state" => nil,
+        "labels" => nil,
+        "inverseRelations" => nil
+      }
+    self assert: issue description equals: nil
+    self assert: issue state equals: nil
+    self assert: issue labels equals: #()
+    self assert: issue blockedBy equals: #()
+    self assert: (IssueRef fromNode: #{
+      "id" => "y",
+      "state" => nil
+    }) state equals: nil
+    self assert: (IssueRef fromNode: #{
+      "id" => "y",
+      "state" => #{}
+    }) state equals: nil
+
   testFetchCandidateIssuesEmptyStates =>
     client := LinearClient new
     result := client fetchCandidateIssues: #()
