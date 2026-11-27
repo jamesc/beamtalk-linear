@@ -19,38 +19,51 @@ typed Value subclass: Issue
 
   /// Builds an Issue from a Linear GraphQL issue node.
   class fromNode: node :: Dictionary -> Issue =>
-    state := (node at: "state" ifAbsent: [#{}]) at: "name" ifAbsent: [nil]
-    labels := self labelsFromNode: (node at: "labels" ifAbsent: [nil])
-    blockers := self blockersFromNode: (node at: "inverseRelations" ifAbsent: [
-      nil
-    ])
-    priority := node at: "priority" ifAbsent: [nil]
-    priority := priority match: [
+    #{
+      ?"id" => id,
+      ?"identifier" => identifier,
+      ?"title" => title,
+      ?"description" => description,
+      ?"priority" => rawPriority,
+      ?"state" => stateNode,
+      ?"branchName" => branchName,
+      ?"url" => url,
+      ?"labels" => labelsObj,
+      ?"inverseRelations" => relationsObj,
+      ?"createdAt" => createdAt,
+      ?"updatedAt" => updatedAt
+    } := node
+    // `state` may be absent, null, or a node without `name`.
+    state := stateNode match: [
+      #{?"name" => name} -> name;
+      _ -> nil
+    ]
+    priority := rawPriority match: [
       n :: Integer -> n;
       _ -> nil
     ]
     self
       new: #{
-        #id => (node at: "id" ifAbsent: [nil]),
-        #identifier => (node at: "identifier" ifAbsent: [nil]),
-        #title => (node at: "title" ifAbsent: [nil]),
-        #description => (node at: "description" ifAbsent: [nil]),
+        #id => id,
+        #identifier => identifier,
+        #title => title,
+        #description => description,
         #priority => priority,
         #state => state,
-        #branchName => (node at: "branchName" ifAbsent: [nil]),
-        #url => (node at: "url" ifAbsent: [nil]),
-        #labels => labels,
-        #blockedBy => blockers,
-        #createdAt => (node at: "createdAt" ifAbsent: [nil]),
-        #updatedAt => (node at: "updatedAt" ifAbsent: [nil])
+        #branchName => branchName,
+        #url => url,
+        #labels => (self labelsFromNode: labelsObj),
+        #blockedBy => (self blockersFromNode: relationsObj),
+        #createdAt => createdAt,
+        #updatedAt => updatedAt
       }
 
-  class labelsFromNode: labelsObj :: Dictionary -> List(String) =>
+  class labelsFromNode: labelsObj :: Dictionary | Nil -> List(String) =>
     labelsObj isNil ifTrue: [^#()]
     nodes := labelsObj at: "nodes" ifAbsent: [#()]
     nodes collect: [:l | (l at: "name" ifAbsent: [""]) lowercase]
 
-  class blockersFromNode: relationsObj :: Dictionary -> List(IssueRef) =>
+  class blockersFromNode: relationsObj :: Dictionary | Nil -> List(IssueRef) =>
     relationsObj isNil ifTrue: [^#()]
     nodes := relationsObj at: "nodes" ifAbsent: [#()]
     // Only include inverse relations of type "blocks"
