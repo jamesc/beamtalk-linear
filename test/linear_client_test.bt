@@ -237,6 +237,10 @@ TestCase subclass: LinearClientTest
     self assert: issue state equals: nil
     self assert: issue labels equals: #()
     self assert: issue blockedBy equals: #()
+    self assert: (Issue fromNode: #{
+      "id" => "x",
+      "state" => #{}
+    }) state equals: nil
     self assert: (IssueRef fromNode: #{
       "id" => "y",
       "state" => nil
