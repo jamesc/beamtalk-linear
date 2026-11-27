@@ -205,6 +205,22 @@ TestCase subclass: LinearClientTest
     issue := Issue fromNode: node
     self assert: issue priority equals: nil
 
+  testNormalizeSparseNodeLeavesAbsentKeysNil =>
+    // A Linear node only carries the keys the query selected; every absent
+    // key reads as nil (or an empty list) rather than failing.
+    issue := Issue fromNode: #{"id" => "x"}
+    self assert: issue id equals: "x"
+    self assert: issue identifier equals: nil
+    self assert: issue title equals: nil
+    self assert: issue state equals: nil
+    self assert: issue priority equals: nil
+    self assert: issue labels equals: #()
+    self assert: issue blockedBy equals: #()
+    ref := IssueRef fromNode: #{"identifier" => "Y-1"}
+    self assert: ref id equals: nil
+    self assert: ref identifier equals: "Y-1"
+    self assert: ref state equals: nil
+
   testFetchCandidateIssuesEmptyStates =>
     client := LinearClient new
     result := client fetchCandidateIssues: #()
